@@ -1,0 +1,108 @@
+//////////////////////////////// CREATE TABLES ////////////////////////////////////
+CREATE TABLE Class(
+	Code		CHAR(10)	NOT NULL,
+	Section	CHAR(10)	NOT NULL,
+	InstName	TEXT		NOT NULL,
+    	Aplus		INTEGER	NOT NULL,
+	A		INTEGER	NOT NULL,
+	Amin		INTEGER	NOT NULL,
+	Bplus		INTEGER	NOT NULL,
+	B		INTEGER	NOT NULL,
+	Bmin		INTEGER	NOT NULL,
+	Cplus		INTEGER	NOT NULL,
+	C		INTEGER	NOT NULL,
+	Cmin		INTEGER	NOT NULL,
+	Dplus		INTEGER	NOT NULL,
+	D		INTEGER	NOT NULL,
+	Dmin		INTEGER	NOT NULL,
+	F		INTEGER	NOT NULL,
+	Other		INTEGER	NOT NULL,
+	AvgGpa		REAL		NOT NULL,
+	TermCode	INTEGER	NOT NULL,
+	PRIMARY KEY(Code, Section, TermCode),
+FOREIGN KEY (InstName) REFERENCES Instructor(Name),
+FOREIGN KEY (Code) REFERENCES Course(Code)
+);
+// Import into table
+.import Class.csv Class
+
+CREATE TABLE FutureClass(
+	Code		CHAR(10)	NOT NULL,
+	Section	CHAR(10)	NOT NULL,
+    	TermCode	INTEGER	NOT NULL,
+	InstName	TEXT		NOT NULL,
+	PRIMARY KEY(Code, Section, TermCode)
+	FOREIGN KEY (InstName) REFERENCES Instructor(Name),
+FOREIGN KEY (Code) REFERENCES Course(Code)
+);
+// Import into table
+.import FutureClass.csv FutureClass
+
+CREATE TABLE Instructor(
+Name TEXT PRIMARY KEY NOT NULL,
+Rating REAL NOT NULL
+);
+// Import into table
+.import Instructor.csv Instructor
+
+CREATE  TABLE Course(
+Code CHAR(10) PRIMARY KEY NOT NULL,
+Name TEXT DEFAULT 'N/A'
+);
+// Import into table
+.import Course.csv Course
+
+CREATE TABLE Fulfills(
+CourseCode TEXT,
+RequirementName TEXT,
+PRIMARY KEY(CourseCode, RequirementName),
+FOREIGN KEY (RequirementName ) REFERENCES RequirementGroup(Name),
+FOREIGN KEY (CourseCode ) REFERENCES Course(Code)
+);
+// Import into table
+.import Fulfills.csv Fulfills
+
+CREATE TABLE RequirementGroup(
+Name TEXT NOT NULL,
+GroupName TEXT NOT NULL,
+PRIMARY KEY(Name, GroupName) 
+);
+// Import into table
+.import RequirementGroup.csv RequirementGroup
+
+//////////////////////////////// QUERIES ////////////////////////////////////
+// Get course information NOT checking if its in next semester
+SELECT Code, AVG(AvgGpa) AS AvgGrade, InstName, Rating 
+FROM Class, Instructor
+WHERE Code = “CSE174” AND Name = InstName
+GROUP BY InstName
+ORDER BY AvgGrade DESC;
+
+// NOT WORKING Get course information IS checking if its in next semester
+SELECT f.Code, AVG(AvgGpa) AS AvgGrade, Name, Rating 
+FROM Class AS c, Instructor, FutureClass AS f
+WHERE f.Code = “CSE174” AND c.Code = f.code 
+AND Name = f.InstName AND f.InstName = c.InstName
+GROUP BY f.InstName
+ORDER BY AvgGrade DESC;
+
+// Update Rankings +1
+UPDATE Instructor
+SET Rating= Rating + 0.1
+WHERE Name = “Simko Peter”;
+
+// Update Rankings -1
+UPDATE Instructor
+SET Rating= Rating - 0.1
+WHERE Name = “Simko Peter”;
+
+// Display all Courses that are in a Requirement Group
+SELECT CourseCode, RequirementName, GroupName 
+FROM RequirementGroup, Fulfills
+WHERE GroupName = “Science” AND Name = RequirementName;
+
+// Display all courses that are offered next semester and that fulfill something
+SELECT DISTINCT Code, InstName, RequirementName
+FROM FutureClass, Fulfills
+WHERE Code = CourseCode
+ORDER BY RequirementName DESC;
